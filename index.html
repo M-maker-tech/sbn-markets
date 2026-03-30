@@ -1,0 +1,481 @@
+# sbn-markets<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Sparebanken Norge Markets</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#FFF2F2;font-family:Arial,sans-serif;color:#2D0503;min-height:100vh;}
+select,input,button,textarea{font-family:Arial,sans-serif;}
+button{cursor:pointer;}
+.nav{background:#2D0503;padding:0 1.5rem;display:flex;align-items:center;position:sticky;top:0;z-index:10;}
+.nav-logo{padding:10px 0;margin-right:24px;}
+.nav-logo svg text{fill:#FFF2F2;}
+.nav-btn{padding:14px 14px;font-size:12px;background:transparent;border:none;border-bottom:2px solid transparent;color:#FFF2F2;font-weight:400;transition:all 0.15s;}
+.nav-btn.active{color:#FF4238;border-bottom-color:#FF4238;font-weight:700;}
+.nav-status{margin-left:auto;font-size:11px;color:#FFF2F2;opacity:0.45;}
+.nav-status span{font-weight:600;}
+.page{max-width:820px;margin:0 auto;padding:1.5rem 1rem;}
+.card{background:#fff;border:0.5px solid #e8d0d0;border-radius:10px;padding:1rem 1.25rem;margin-bottom:12px;}
+.lbl{font-size:10px;color:#2D0503;opacity:0.6;text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:4px;}
+.sel,.inp{background:#fff;border:1px solid #e0c0c0;border-radius:6px;padding:6px 8px;color:#2D0503;font-size:13px;width:100%;}
+.inp-r{text-align:right;}
+.pill{padding:5px 14px;font-size:12px;border-radius:16px;border:1px solid #e0c0c0;background:#FFF2F2;color:#2D0503;font-weight:400;margin-right:6px;}
+.pill.active{border:2px solid #FF4238;background:#FF4238;color:#FFF2F2;font-weight:700;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.grid3{display:grid;grid-template-columns:1fr 1.4fr 1.2fr;gap:12px;}
+.field-val{border-radius:4px;padding:5px 10px;font-family:monospace;font-size:14px;font-weight:500;min-width:90px;text-align:right;border:1px solid;}
+.field-val.green{background:#FF4238;border-color:#cc2a22;color:#FFF2F2;}
+.field-val.red{background:#2D0503;border-color:#1a0200;color:#FFF2F2;}
+.field-val.normal{background:#fff;border-color:#e0c0c0;color:#2D0503;}
+.field-val.muted{background:#fff;border-color:#e0c0c0;color:#aaa;font-size:12px;padding:3px 8px;}
+.tag{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600;}
+.quick-btn{padding:3px 10px;font-size:11px;border-radius:12px;border:1px solid #e0c0c0;background:#FFF2F2;color:#2D0503;margin-right:5px;margin-bottom:5px;}
+.save-btn{padding:7px 20px;font-size:13px;border-radius:8px;border:none;background:#FF4238;color:#FFF2F2;font-weight:600;}
+.import-btn{padding:7px 20px;font-size:13px;border-radius:8px;border:none;background:#FF4238;color:#FFF2F2;font-weight:600;}
+.tbl{width:100%;border-collapse:collapse;font-size:12px;}
+.tbl th{padding:5px 8px;font-weight:500;color:#2D0503;opacity:0.6;border-bottom:0.5px solid #f0d0d0;text-align:left;font-size:11px;}
+.tbl td{padding:4px 8px;color:#2D0503;}
+.tbl tr:nth-child(even){background:#fffafa;}
+.tbl tr.curr{background:#e8f0fe;}
+.hidden{display:none;}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-logo">
+    <svg height="32" viewBox="0 0 200 38" fill="none">
+      <text x="0" y="16" font-family="Arial,sans-serif" font-size="13" font-weight="700">Sparebanken Norge</text>
+      <text x="0" y="33" font-family="Arial,sans-serif" font-size="13" font-weight="700">Markets</text>
+    </svg>
+  </div>
+  <button class="nav-btn active" onclick="showPage('ticket')">Trade Ticket</button>
+  <button class="nav-btn" onclick="showPage('calc')">Kalkulator</button>
+  <button class="nav-btn" onclick="showPage('data')">Datakilder</button>
+  <button class="nav-btn" onclick="showPage('settings')">Innstillinger</button>
+  <div class="nav-status">Datakilde: <span id="nav-src">LSEG statisk</span></div>
+</nav>
+
+<div class="page">
+  <!-- TICKET -->
+  <div id="page-ticket">
+    <div id="ticket-header" style="background:#2D0503;border-radius:10px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <p style="font-size:10px;color:#FF4238;margin:0 0 2px;letter-spacing:0.1em;">SPAREBANKEN NORGE MARKETS</p>
+        <p id="ticket-title" style="font-size:15px;font-weight:700;color:#FFF2F2;margin:0;">Buy EUR/NOK · 3M · 11.280000</p>
+      </div>
+      <div>
+        <button id="btn-buy" onclick="setSide('Buy')" style="padding:6px 20px;background:#FF4238;border:1.5px solid #FF4238;border-radius:6px;color:#FFF2F2;font-size:12px;font-weight:700;margin-right:6px;">Buy</button>
+        <button id="btn-sell" onclick="setSide('Sell')" style="padding:6px 20px;background:transparent;border:1.5px solid rgba(255,255,255,0.3);border-radius:6px;color:#FFF2F2;font-size:12px;font-weight:400;">Sell</button>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:flex-end;">
+      <div><span class="lbl">Par</span><select class="sel" style="width:110px" id="t-pair" onchange="updateTicket()"></select></div>
+      <div><span class="lbl">Tenor</span><select class="sel" style="width:80px" id="t-tenor" onchange="updateTicket()"></select></div>
+      <div><span class="lbl" id="t-ccy1-lbl">EUR beløp</span><input class="inp inp-r" type="number" id="t-amount" value="1000000" style="width:130px" oninput="updateTicket()"/></div>
+      <div><span class="lbl">Rating</span><select class="sel" style="width:160px" id="t-rating" onchange="updateTicket()"></select></div>
+      <div><span class="lbl">Spot mid</span><input class="inp inp-r" type="number" step="0.0001" id="t-spot" placeholder="11.2100" style="width:100px" oninput="updateTicket()"/></div>
+    </div>
+
+    <div class="grid3">
+      <div class="card">
+        <span class="lbl">Value Date</span>
+        <p id="t-vdate" style="font-family:monospace;font-size:13px;color:#2D0503;margin:0 0 8px;"></p>
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="font-size:11px;color:#2D0503;opacity:0.5;" id="t-c1"></span><span id="t-amt1" style="font-family:monospace;font-size:13px;"></span></div>
+        <div style="display:flex;justify-content:space-between;"><span style="font-size:11px;color:#2D0503;opacity:0.5;" id="t-c2"></span><span id="t-amt2" style="font-family:monospace;font-size:13px;opacity:0.7;"></span></div>
+      </div>
+      <div class="card">
+        <div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:8px;">
+          <div><span class="lbl">Spot Rate</span><div id="t-spotrate" class="field-val red">11.230000</div></div>
+          <div><span class="lbl">Margin</span><div id="t-spotmgn" class="field-val muted">2.00 øre</div></div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:8px;">
+          <div><span class="lbl">Fwds</span><div id="t-fwds" class="field-val red">20.00</div></div>
+          <div><span class="lbl">Mkt</span><div id="t-mktfwds" class="field-val muted">18.00</div></div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:flex-end;">
+          <div><span class="lbl">All In</span><div id="t-allin" class="field-val red">11.250000</div></div>
+          <div><span class="lbl">Fwd mgn</span><div id="t-fwdmgn" class="field-val muted">2.00 øre</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <span class="lbl">Prisdekomposisjon</span>
+        <div id="t-decomp" style="font-size:11px;"></div>
+        <div id="t-tak" style="margin-top:8px;font-size:11px;padding:4px 8px;border-radius:4px;display:none;"></div>
+      </div>
+    </div>
+    <div id="t-ratingbar" style="margin-top:10px;padding:6px 12px;background:#fff;border:0.5px solid #e0c0c0;border-radius:8px;border-left:3px solid #1D9E75;display:flex;gap:10px;align-items:center;">
+      <span style="font-size:11px;color:#2D0503;opacity:0.6;">Rating</span>
+      <span id="t-rclass" style="font-size:14px;font-weight:700;">E</span>
+      <span id="t-rpd" style="font-size:11px;color:#2D0503;opacity:0.45;"></span>
+      <span id="t-rvol" style="font-size:11px;color:#2D0503;opacity:0.35;margin-left:auto;"></span>
+    </div>
+  </div>
+
+  <!-- CALC -->
+  <div id="page-calc" class="hidden">
+    <div class="grid2" style="margin-bottom:14px;">
+      <div class="card">
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div><span class="lbl">Valutapar</span><select class="sel" id="c-pair" onchange="updateCalc()"></select></div>
+          <div><span class="lbl">Ratingklasse</span><select class="sel" id="c-rating" onchange="updateCalc()" style="font-weight:600;"></select></div>
+          <div>
+            <span class="lbl">Volum</span>
+            <div style="display:flex;gap:6px;">
+              <select class="sel" id="c-ccy" onchange="updateCalc()" style="width:72px;"></select>
+              <input class="inp inp-r" type="number" id="c-amt" value="5000000" style="flex:1;" oninput="updateCalc()"/>
+            </div>
+            <span id="c-vol-info" style="font-size:11px;color:#2D0503;opacity:0.45;"></span>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <span class="lbl">Oppgjørsdato</span>
+        <input class="inp" type="date" id="c-date" style="margin-bottom:8px;" oninput="updateCalc()"/>
+        <div style="margin-bottom:10px;">
+          <button class="quick-btn" onclick="setCalcDate(1)">1M</button>
+          <button class="quick-btn" onclick="setCalcDate(3)">3M</button>
+          <button class="quick-btn" onclick="setCalcDate(6)">6M</button>
+          <button class="quick-btn" onclick="setCalcDate(12)">12M</button>
+          <button class="quick-btn" onclick="setCalcDate(24)">24M</button>
+        </div>
+        <div style="background:#FFF2F2;border-radius:8px;padding:10px 12px;">
+          <span class="lbl">Matchet tenor</span>
+          <p id="c-tenor" style="font-size:22px;font-weight:700;color:#2D0503;margin:2px 0;">12M</p>
+          <p id="c-date-fmt" style="font-size:11px;color:#2D0503;opacity:0.5;font-family:monospace;"></p>
+        </div>
+      </div>
+    </div>
+    <div class="grid2" style="margin-bottom:14px;">
+      <div class="card" id="c-spot-card" style="border-left:3px solid #BA7517;border-top-left-radius:0;border-bottom-left-radius:0;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <span class="lbl">Anbefalt spotmargin</span>
+          <span id="c-rtag" class="tag" style="background:#BA751722;color:#BA7517;">Klasse E</span>
+        </div>
+        <p id="c-spot-val" style="font-size:32px;font-weight:700;color:#2D0503;margin:0 0 4px;">2.00 <span style="font-size:16px;opacity:0.5;">øre</span></p>
+        <p id="c-spot-ex" style="font-size:12px;color:#2D0503;opacity:0.5;margin:0 0 4px;"></p>
+        <p id="c-spot-tak" style="font-size:11px;margin:0;"></p>
+      </div>
+      <div class="card" style="border-left:3px solid #378ADD;border-top-left-radius:0;border-bottom-left-radius:0;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <span class="lbl">Anbefalt forward margin</span>
+          <span id="c-ftag" class="tag" style="background:#378ADD22;color:#378ADD;">12M</span>
+        </div>
+        <p id="c-fwd-val" style="font-size:32px;font-weight:700;color:#2D0503;margin:0 0 4px;">20.00 <span style="font-size:16px;opacity:0.5;">øre</span></p>
+        <p id="c-fwd-info" style="font-size:12px;color:#2D0503;opacity:0.5;margin:0;"></p>
+      </div>
+    </div>
+    <div style="margin-bottom:12px;">
+      <button class="pill active" onclick="setCalcView('tenor',this)">Tenorkurve</button>
+      <button class="pill" onclick="setCalcView('rating',this)">Ratingkurve</button>
+    </div>
+    <div class="card">
+      <div style="position:relative;height:220px;"><canvas id="calc-chart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- DATA -->
+  <div id="page-data" class="hidden">
+    <div style="margin-bottom:12px;">
+      <button class="pill active" onclick="setDataTab('import',this)">Bloomberg/Excel</button>
+      <button class="pill" onclick="setDataTab('formler',this)">Excel-formler</button>
+      <button class="pill" onclick="setDataTab('api',this)">API (fremtidig)</button>
+    </div>
+    <div id="dtab-import" class="card">
+      <p style="font-size:13px;font-weight:600;color:#2D0503;margin:0 0 4px;">Lim inn fra Excel / Bloomberg</p>
+      <p style="font-size:12px;color:#2D0503;opacity:0.6;margin:0 0 10px;line-height:1.6;">Kopier forwardkurve-tabellen fra Excel (Ctrl+C) og lim inn nedenfor.<br>Format: Par · Ticker · ON · 1W · 1M · 2M · 3M · 6M · 9M · 12M · 18M · 2Y · 3Y</p>
+      <textarea id="import-txt" placeholder="eurnok&#9;EURNOK Curncy&#9;11.17&#9;35.83&#9;166.74&#9;..." style="width:100%;height:110px;font-size:11px;font-family:monospace;padding:10px;border-radius:6px;border:1px solid #e0c0c0;background:#fffafa;color:#2D0503;resize:vertical;"></textarea>
+      <div style="display:flex;gap:10px;margin-top:10px;align-items:center;">
+        <button class="import-btn" onclick="doImport()">Importer</button>
+        <button onclick="resetImport()" style="padding:7px 14px;font-size:12px;border-radius:8px;border:1px solid #e0c0c0;background:#fff;color:#2D0503;">Nullstill</button>
+        <span id="import-msg" style="font-size:12px;"></span>
+      </div>
+    </div>
+    <div id="dtab-formler" class="card hidden">
+      <p style="font-size:13px;font-weight:600;color:#2D0503;margin:0 0 10px;">Bloomberg Excel-formler</p>
+      <div id="formler-list"></div>
+    </div>
+    <div id="dtab-api" class="card hidden">
+      <p style="font-size:13px;font-weight:600;color:#2D0503;margin:0 0 8px;">REST API-integrasjon</p>
+      <p style="font-size:12px;color:#2D0503;opacity:0.6;line-height:1.6;margin:0 0 12px;">Koble til en Bloomberg-backend (Python/Azure Functions) for live-priser. Krever B-PIPE eller SAPI-lisens fra Bloomberg.</p>
+      <div style="background:#fffafa;border-radius:6px;padding:12px;border:1px solid #f0d0d0;">
+        <span class="lbl">Forventet JSON-format (øre per tenor)</span>
+        <pre style="font-size:11px;font-family:monospace;color:#2D0503;overflow-x:auto;">{"EUR.NOK": [2.4, 3.0, 6.0, 12.0, 18.0, 37.8, 58.86, 81.36, 130.68, 185.76, 324.0],
+"USD.NOK": [2.3, 2.8, 5.6, ...]}</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div id="page-settings" class="hidden">
+    <div class="card" style="margin-bottom:12px;">
+      <p style="font-size:13px;font-weight:600;color:#2D0503;margin:0 0 4px;">Nettbank-pristak (spot)</p>
+      <p style="font-size:12px;color:#2D0503;opacity:0.6;margin:0 0 12px;line-height:1.6;">Makspris per valutapar. Klikk et par i tabellen for å redigere.</p>
+      <div style="display:flex;gap:10px;align-items:flex-end;margin-bottom:14px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:120px;"><span class="lbl">Valutapar</span><select class="sel" id="s-pair" onchange="sOnPairChange()"></select></div>
+        <div style="width:110px;"><span class="lbl">Tak (øre)</span><input class="inp inp-r" type="number" step="0.01" id="s-val"/></div>
+        <button class="save-btn" onclick="saveTak()" id="s-save-btn">Lagre</button>
+      </div>
+      <table class="tbl" id="tak-table"></table>
+    </div>
+    <div class="card">
+      <p style="font-size:13px;font-weight:600;color:#2D0503;margin:0 0 8px;">Prisingsmodell — ankerpunkter EUR.NOK</p>
+      <div class="grid3">
+        <div style="background:#fffafa;border-radius:8px;padding:10px 12px;border:1px solid #f0d0d0;"><span class="lbl">Klasse A</span><p style="font-size:18px;font-weight:700;color:#1D9E75;font-family:monospace;">0,08 øre</p></div>
+        <div style="background:#fffafa;border-radius:8px;padding:10px 12px;border:1px solid #f0d0d0;"><span class="lbl">Klasse E (mid)</span><p style="font-size:18px;font-weight:700;color:#BA7517;font-family:monospace;">2,00 øre</p></div>
+        <div style="background:#fffafa;border-radius:8px;padding:10px 12px;border:1px solid #f0d0d0;"><span class="lbl">Klasse K (maks)</span><p style="font-size:18px;font-weight:700;color:#FF4238;font-family:monospace;">4,90 øre</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Data ──────────────────────────────────────────────────────
+const RATINGS=[{l:"A",pd:0.0005},{l:"B",pd:0.0018},{l:"C",pd:0.0038},{l:"D",pd:0.0070},{l:"E",pd:0.0120},{l:"F",pd:0.0213},{l:"G",pd:0.0388},{l:"H",pd:0.0750},{l:"I",pd:0.1750},{l:"J",pd:0.6250},{l:"K",pd:1.0000}];
+const TENORS=[{l:"ON",y:0.003},{l:"TN",y:0.006},{l:"SN",y:0.011},{l:"1W",y:0.019},{l:"1M",y:0.083},{l:"2M",y:0.167},{l:"3M",y:0.25},{l:"6M",y:0.5},{l:"9M",y:0.75},{l:"12M",y:1},{l:"18M",y:1.5},{l:"24M",y:2},{l:"36M",y:3}];
+const FWD_ORE={"EUR.NOK":[2.4,2.4,2.4,3.0,6.0,12.0,18.0,37.8,58.86,81.36,130.68,185.76,324.0],"USD.NOK":[2.3,2.3,2.3,2.8,5.6,11.1,16.6,34.8,54.2,74.9,120.2,170.9,298.0],"GBP.NOK":[2.9,2.9,2.9,3.6,7.1,14.1,21.2,44.4,69.2,95.6,153.5,218.1,380.5],"CHF.NOK":[2.4,2.4,2.4,3.0,6.0,12.1,18.1,38.1,59.3,82.0,131.7,187.3,326.6],"CAD.NOK":[1.7,1.7,1.7,2.1,4.1,8.1,12.2,25.6,39.8,55.0,88.2,125.4,218.7],"AUD.NOK":[1.5,1.5,1.5,1.9,3.7,7.4,11.1,23.2,36.1,49.9,80.1,113.8,198.4],"SEK.NOK":[0.3,0.3,0.3,0.3,0.6,1.1,1.6,3.3,5.2,7.1,11.4,16.2,28.3],"DKK.NOK":[0.4,0.4,0.4,0.5,0.9,1.7,2.5,5.1,7.9,11.0,17.6,24.9,43.5],"JPY.NOK":[1.5,1.5,1.5,1.8,3.6,7.1,10.6,22.2,34.6,47.7,76.7,108.9,190.0],"PLN.NOK":[0.6,0.6,0.6,0.8,1.5,2.9,4.3,8.9,13.9,19.2,30.8,43.7,76.2],"EUR.USD":[0.3,0.3,0.3,0.3,0.6,1.2,1.8,3.7,5.7,7.8,12.5,17.8,31.0],"GBP.USD":[0.3,0.3,0.3,0.4,0.7,1.4,2.1,4.3,6.6,9.2,14.7,20.9,36.4],"EUR.GBP":[0.2,0.2,0.2,0.3,0.5,0.9,1.4,2.9,4.4,6.1,9.8,13.9,24.3],"EUR.SEK":[2.5,2.5,2.5,3.1,6.1,12.1,18.2,38.1,59.3,82.0,131.7,187.2,326.5],"USD.SEK":[2.3,2.3,2.3,2.8,5.6,11.2,16.7,35.1,54.6,75.4,121.1,172.1,300.2],"USD.JPY":[0.33,0.33,0.33,0.41,0.83,1.65,2.48,5.20,8.10,11.20,17.99,25.57,44.60],"EUR.JPY":[0.36,0.36,0.36,0.45,0.90,1.80,2.70,5.66,8.81,12.18,19.56,27.81,48.50],"USD.CHF":[0.2,0.2,0.2,0.3,0.5,1.0,1.5,3.1,4.8,6.6,10.5,14.9,26.0],"GBP.DKK":[1.9,1.9,1.9,2.4,4.7,9.3,13.9,29.1,45.3,62.6,100.5,142.9,249.2],"EUR.DKK":[1.6,1.6,1.6,2.0,4.0,7.9,11.8,24.8,38.6,53.3,85.6,121.7,212.2],"USD.DKK":[1.5,1.5,1.5,1.9,3.7,7.3,10.9,22.8,35.5,49.0,78.7,111.9,195.1]};
+const PAIRS=Object.keys(FWD_ORE);
+const SPOT_MID={"EUR.NOK":11.21,"USD.NOK":10.48,"GBP.NOK":13.40,"CHF.NOK":11.49,"CAD.NOK":7.69,"AUD.NOK":6.98,"SEK.NOK":0.993,"DKK.NOK":1.527,"JPY.NOK":0.068,"PLN.NOK":2.68,"EUR.USD":1.087,"GBP.USD":1.277,"EUR.GBP":0.851,"EUR.SEK":11.48,"USD.SEK":10.56,"USD.JPY":156.86,"EUR.JPY":170.58,"USD.CHF":0.912,"GBP.DKK":8.76,"EUR.DKK":7.46,"USD.DKK":6.86};
+const NOK_RATES={NOK:1,EUR:11.21,USD:10.48,GBP:13.40,CHF:11.49,CAD:7.69,AUD:6.98,SEK:0.993,DKK:1.527,JPY:0.068,PLN:2.68};
+const VOL_BRACKETS=[{max:5e6,scale:1.00},{max:10e6,scale:0.95},{max:25e6,scale:0.90},{max:50e6,scale:0.82},{max:Infinity,scale:0.75}];
+const RCOLOR={A:"#1D9E75",B:"#5DCAA5",C:"#378ADD",D:"#85B7EB",E:"#BA7517",F:"#EF9F27",G:"#D85A30",H:"#E24B4A",I:"#A32D2D",J:"#791F1F",K:"#501313"};
+let TAK={"EUR.NOK":4.9,"USD.NOK":4.7,"GBP.NOK":5.8,"CHF.NOK":5.5,"CAD.NOK":4.0,"AUD.NOK":3.2,"SEK.NOK":0.8,"DKK.NOK":0.85,"JPY.NOK":0.5,"EUR.USD":0.047,"GBP.USD":0.058};
+let BB_DATA=null;
+let calcChart=null;
+let currentSide="Buy";
+let calcView="tenor";
+
+// ── Helpers ───────────────────────────────────────────────────
+const volScale=n=>VOL_BRACKETS.find(b=>n<b.max)?.scale??0.75;
+const EURNOK_ON=2.4,A_ORE=0.08,E_ORE=2.0,K_ORE=4.9,PD_A=0.0005,PD_E=0.012,PD_K=1.0;
+function spotOreEURNOK(pd){if(pd<=PD_E){const t=Math.log(pd/PD_A)/Math.log(PD_E/PD_A);return A_ORE+t*(E_ORE-A_ORE);}const t=Math.log(pd/PD_E)/Math.log(PD_K/PD_E);return E_ORE+t*(K_ORE-E_ORE);}
+function getOreArr(pair){if(BB_DATA&&BB_DATA[pair])return BB_DATA[pair].map(p=>p/100);return FWD_ORE[pair]||FWD_ORE["EUR.NOK"];}
+function fairSpotOre(ore,pd){return(ore[0]/EURNOK_ON)*spotOreEURNOK(pd);}
+function tenorFactor(ore,i){if(ore[0]===0)return 1;return ore[Math.min(i,ore.length-1)]/ore[0];}
+function addMonths(m){const d=new Date();d.setMonth(d.getMonth()+m);return d.toISOString().slice(0,10);}
+function addDays(n){const d=new Date();d.setDate(d.getDate()+n);return d.toISOString().slice(0,10);}
+function fmtDate(s){return new Date(s).toLocaleDateString("no-NO",{day:"2-digit",month:"short",year:"numeric"});}
+function tenorIdxFromDate(ds){const diffY=Math.max(0,(new Date(ds)-new Date())/(365.25*24*3600*1000));let b=0,bd=Infinity;TENORS.forEach((t,i)=>{const d=Math.abs(t.y-diffY);if(d<bd){bd=d;b=i;}});return b;}
+function f2(v){return v.toFixed(2);}
+
+// ── Init selects ──────────────────────────────────────────────
+function initSelects(){
+  ['t-pair','c-pair','s-pair'].forEach(id=>{
+    const el=document.getElementById(id);
+    PAIRS.forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent=p;el.appendChild(o);});
+  });
+  const tr=document.getElementById('t-rating');
+  const cr=document.getElementById('c-rating');
+  RATINGS.forEach((r,i)=>{
+    [tr,cr].forEach(el=>{const o=document.createElement('option');o.value=i;o.textContent=r.l+' · PD '+(r.pd*100).toFixed(2)+'%';el.appendChild(o);});
+  });
+  tr.value=4;cr.value=4;
+  ['t-tenor'].forEach(id=>{
+    const el=document.getElementById(id);
+    TENORS.forEach((t,i)=>{const o=document.createElement('option');o.value=i;o.textContent=t.l;el.appendChild(o);});
+    el.value=6;
+  });
+  const cc=document.getElementById('c-ccy');
+  Object.keys(NOK_RATES).forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;cc.appendChild(o);});
+  cc.value='EUR';
+  document.getElementById('c-date').value=addMonths(12);
+  buildFormlerList();
+  buildTakTable();
+}
+
+// ── Page navigation ───────────────────────────────────────────
+function showPage(id){
+  ['ticket','calc','data','settings'].forEach(p=>{
+    document.getElementById('page-'+p).classList.toggle('hidden',p!==id);
+  });
+  document.querySelectorAll('.nav-btn').forEach((b,i)=>{
+    b.classList.toggle('active',['ticket','calc','data','settings'][i]===id);
+  });
+  if(id==='calc')updateCalc();
+}
+
+// ── TICKET ────────────────────────────────────────────────────
+function setSide(side){
+  currentSide=side;
+  const isBuy=side==='Buy';
+  document.getElementById('btn-buy').style.background=isBuy?'#FF4238':'transparent';
+  document.getElementById('btn-buy').style.fontWeight=isBuy?'700':'400';
+  document.getElementById('btn-sell').style.background=!isBuy?'#FF4238':'transparent';
+  document.getElementById('btn-sell').style.fontWeight=!isBuy?'700':'400';
+  document.getElementById('ticket-header').style.background=isBuy?'#2D0503':'#FF4238';
+  updateTicket();
+}
+
+function updateTicket(){
+  const pair=document.getElementById('t-pair').value;
+  const tIdx=parseInt(document.getElementById('t-tenor').value);
+  const rIdx=parseInt(document.getElementById('t-rating').value);
+  const amount=parseFloat(document.getElementById('t-amount').value)||1000000;
+  const manualSpot=document.getElementById('t-spot').value;
+  const [ccy1,ccy2]=pair.split('.');
+  const rating=RATINGS[rIdx];
+  const ore=getOreArr(pair);
+  const spotMid=manualSpot!==''&&!isNaN(Number(manualSpot))?Number(manualSpot):(SPOT_MID[pair]||11);
+  const nomNOK=pair.endsWith('NOK')?amount:amount*(SPOT_MID[pair]||1);
+  const vsc=volScale(nomNOK);
+  const spotMgn=fairSpotOre(ore,rating.pd)*vsc;
+  const baseFwd=ore[Math.min(tIdx,ore.length-1)];
+  const fwdMgn=spotMgn*tenorFactor(ore,tIdx);
+  const isBuy=currentSide==='Buy';
+  const allIn=isBuy?spotMid+(baseFwd+fwdMgn)/100:spotMid-(baseFwd+fwdMgn)/100;
+  const spotShow=isBuy?spotMid+spotMgn/100:spotMid-spotMgn/100;
+  const tenor=TENORS[tIdx];
+  const vdate=new Date();vdate.setDate(vdate.getDate()+Math.round(tenor.y*365));
+
+  document.getElementById('ticket-title').textContent=currentSide+' '+ccy1+'/'+ccy2+' · '+tenor.l+' · '+allIn.toFixed(6);
+  document.getElementById('t-ccy1-lbl').textContent=ccy1+' beløp';
+  document.getElementById('t-vdate').textContent=vdate.toLocaleDateString('no-NO',{day:'2-digit',month:'short',year:'numeric'});
+  document.getElementById('t-c1').textContent=ccy1;
+  document.getElementById('t-c2').textContent=ccy2;
+  document.getElementById('t-amt1').textContent=amount.toLocaleString();
+  document.getElementById('t-amt2').textContent=Math.round(amount*allIn).toLocaleString('no-NO');
+  const cls=isBuy?'red':'green';
+  document.getElementById('t-spotrate').textContent=spotShow.toFixed(6);
+  document.getElementById('t-spotrate').className='field-val '+cls;
+  document.getElementById('t-spotmgn').textContent=f2(spotMgn)+' øre';
+  document.getElementById('t-fwds').textContent=f2(baseFwd+fwdMgn);
+  document.getElementById('t-fwds').className='field-val '+cls;
+  document.getElementById('t-mktfwds').textContent=f2(baseFwd);
+  document.getElementById('t-allin').textContent=allIn.toFixed(6);
+  document.getElementById('t-allin').className='field-val '+cls;
+  document.getElementById('t-fwdmgn').textContent=f2(fwdMgn)+' øre';
+  // decomp
+  const rows=[['Spot mid',spotMid.toFixed(6),'#2D0503'],['+ Spot mgn',(spotMgn/100).toFixed(6),'#FF4238'],['+ Fwd basis',(baseFwd/100).toFixed(6),'#aaa'],['+ Fwd mgn',(fwdMgn/100).toFixed(6),'#FF4238'],['All in',allIn.toFixed(6),'#2D0503']];
+  document.getElementById('t-decomp').innerHTML=rows.map((r,i)=>`<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px;${i===3?'border-bottom:0.5px solid #e8d0d0;padding-bottom:4px':''}"><span style="color:#2D0503;opacity:0.55">${r[0]}</span><span style="color:${r[2]};font-family:monospace;font-weight:${i===4?700:400}">${r[1]}</span></div>`).join('');
+  // tak
+  const takEl=document.getElementById('t-tak');
+  const takOre=TAK[pair]??null;
+  if(takOre!=null){takEl.style.display='block';const over=spotMgn>takOre;takEl.style.background=over?'#ffeeee':'#f0fff4';takEl.style.color=over?'#FF4238':'#1D9E75';takEl.style.border='0.5px solid '+(over?'#FF423844':'#c3e6cb');takEl.textContent='Tak '+f2(takOre)+' øre · '+(over?'OVER':'headroom '+f2(takOre-spotMgn)+' øre');}else{takEl.style.display='none';}
+  // rating bar
+  document.getElementById('t-ratingbar').style.borderLeftColor=RCOLOR[rating.l];
+  document.getElementById('t-rclass').textContent=rating.l;
+  document.getElementById('t-rclass').style.color=RCOLOR[rating.l];
+  document.getElementById('t-rpd').textContent='PD '+(rating.pd*100).toFixed(2)+'%';
+  document.getElementById('t-rvol').textContent='NOK '+(nomNOK/1e6).toFixed(1)+'M · rabatt '+((1-vsc)*100).toFixed(0)+'%';
+}
+
+// ── CALC ──────────────────────────────────────────────────────
+function setCalcDate(m){document.getElementById('c-date').value=addMonths(m);updateCalc();}
+function setCalcView(v,btn){
+  calcView=v;
+  document.querySelectorAll('#page-calc .pill').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  updateCalc();
+}
+
+function updateCalc(){
+  const pair=document.getElementById('c-pair').value;
+  const rIdx=parseInt(document.getElementById('c-rating').value);
+  const nomAmt=parseFloat(document.getElementById('c-amt').value)||5000000;
+  const nomCcy=document.getElementById('c-ccy').value;
+  const settl=document.getElementById('c-date').value;
+  const rating=RATINGS[rIdx];
+  const ore=getOreArr(pair);
+  const tIdx=tenorIdxFromDate(settl);
+  const tenor=TENORS[tIdx];
+  const nomNOK=Math.round(nomAmt*(NOK_RATES[nomCcy]||1));
+  const vsc=volScale(nomNOK);
+  const spotOre=fairSpotOre(ore,rating.pd)*vsc;
+  const fwdOre=spotOre*tenorFactor(ore,tIdx);
+  const takOre=TAK[pair]??null;
+  const volBkt=VOL_BRACKETS.find(b=>nomNOK<b.max);
+
+  document.getElementById('c-tenor').textContent=tenor.l;
+  document.getElementById('c-date-fmt').textContent=fmtDate(settl);
+  document.getElementById('c-vol-info').textContent='NOK '+nomNOK.toLocaleString()+' · rabatt '+((1-vsc)*100).toFixed(0)+'%';
+  document.getElementById('c-rtag').textContent='Klasse '+rating.l;
+  document.getElementById('c-rtag').style.background=RCOLOR[rating.l]+'22';
+  document.getElementById('c-rtag').style.color=RCOLOR[rating.l];
+  document.getElementById('c-spot-card').style.borderLeftColor=RCOLOR[rating.l];
+  document.getElementById('c-spot-val').innerHTML=f2(spotOre)+' <span style="font-size:16px;opacity:0.5">øre</span>';
+  document.getElementById('c-spot-ex').textContent='Eks midkurs 11,00 → '+(11+spotOre/100).toFixed(4);
+  document.getElementById('c-ftag').textContent=tenor.l;
+  document.getElementById('c-fwd-val').innerHTML=f2(fwdOre)+' <span style="font-size:16px;opacity:0.5">øre</span>';
+  document.getElementById('c-fwd-info').textContent='Basis: '+f2(ore[Math.min(tIdx,ore.length-1)])+' øre · mark-up: '+((fwdOre/ore[Math.min(tIdx,ore.length-1)]-1)*100).toFixed(0)+'%';
+  const tEl=document.getElementById('c-spot-tak');
+  if(takOre!=null){tEl.style.color=spotOre>takOre?'#FF4238':'#1D9E75';tEl.textContent=spotOre>takOre?'Over tak ('+f2(takOre)+' øre)':'Under tak — headroom '+f2(takOre-spotOre)+' øre';}
+
+  // chart
+  if(calcChart){calcChart.destroy();calcChart=null;}
+  const ctx=document.getElementById('calc-chart').getContext('2d');
+  if(calcView==='tenor'){
+    const labels=TENORS.map(t=>t.l);
+    const anbefalt=TENORS.map((_,i)=>+(fairSpotOre(ore,rating.pd)*vsc*tenorFactor(ore,i)).toFixed(2));
+    const basis=TENORS.map((_,i)=>+ore[Math.min(i,ore.length-1)].toFixed(2));
+    calcChart=new Chart(ctx,{type:'line',data:{labels,datasets:[{label:'Anbefalt',data:anbefalt,borderColor:'#FF4238',backgroundColor:'transparent',borderWidth:2,pointRadius:3},{label:'Basis',data:basis,borderColor:'#aaa',backgroundColor:'transparent',borderWidth:1.5,borderDash:[4,2],pointRadius:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:11}}}},scales:{x:{ticks:{font:{size:10}}},y:{ticks:{font:{size:10},callback:v=>v.toFixed(1)}}}}});
+  }else{
+    const labels=RATINGS.map(r=>r.l);
+    const spot=RATINGS.map(r=>+(fairSpotOre(ore,r.pd)*vsc).toFixed(2));
+    const fwd=RATINGS.map(r=>+(fairSpotOre(ore,r.pd)*vsc*tenorFactor(ore,tIdx)).toFixed(2));
+    calcChart=new Chart(ctx,{type:'line',data:{labels,datasets:[{label:'Spot',data:spot,borderColor:'#378ADD',backgroundColor:'transparent',borderWidth:2,pointRadius:3},{label:'Forward',data:fwd,borderColor:'#FF4238',backgroundColor:'transparent',borderWidth:2,pointRadius:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:11}}}},scales:{x:{ticks:{font:{size:10}}},y:{ticks:{font:{size:10},callback:v=>v.toFixed(1)}}}}});
+  }
+}
+
+// ── DATA ──────────────────────────────────────────────────────
+function setDataTab(tab,btn){
+  ['import','formler','api'].forEach(t=>{document.getElementById('dtab-'+t).classList.toggle('hidden',t!==tab);});
+  document.querySelectorAll('#page-data .pill').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+function buildFormlerList(){
+  const items=[['Spot bid','=@BDP(B4&" curncy";"PX_BID")'],['Spot ask','=@BDP(B4&" curncy";"PX_ASK")'],['Spot mid','=@BDP(B4&" curncy";"PX_MID")'],['Forward pip (1M)','=@BDP(B4&"1M BGN Curncy";"BID")'],['Forward (dynamisk)','=@BDP(B4&C1&" BGN Curncy";"BID")']];
+  document.getElementById('formler-list').innerHTML=items.map(([l,f])=>`<div style="background:#fffafa;border-radius:6px;padding:8px 10px;border:1px solid #f0d0d0;margin-bottom:8px;"><p style="font-size:10px;color:#2D0503;opacity:0.5;margin:0 0 3px;text-transform:uppercase;">${l}</p><code style="font-size:12px;font-family:monospace;color:#FF4238;">${f}</code></div>`).join('');
+}
+function doImport(){
+  const txt=document.getElementById('import-txt').value;
+  try{
+    const lines=txt.trim().split('\n').filter(l=>l.trim());
+    const result={};
+    for(let i=1;i<lines.length;i++){
+      const cols=lines[i].split(/\t|;/).map(c=>c.trim().replace(',','.'));
+      if(cols.length<3)continue;
+      const raw=cols[0].toUpperCase().replace(/\s/g,'');
+      const key=raw.length===6?raw.slice(0,3)+'.'+raw.slice(3):raw;
+      const vals=cols.slice(2).map(v=>parseFloat(v)).filter(v=>!isNaN(v));
+      if(vals.length>0)result[key]=vals;
+    }
+    const n=Object.keys(result).length;
+    if(n===0){document.getElementById('import-msg').style.color='#FF4238';document.getElementById('import-msg').textContent='Ingen gyldige rader funnet.';return;}
+    BB_DATA=result;
+    const msg='Importerte '+n+' par · '+new Date().toLocaleTimeString('no-NO');
+    document.getElementById('import-msg').style.color='#1D9E75';
+    document.getElementById('import-msg').textContent=msg;
+    document.getElementById('nav-src').textContent='Bloomberg ('+n+' par)';
+    document.getElementById('nav-src').style.color='#FF4238';
+    document.getElementById('nav-src').style.opacity='1';
+    document.getElementById('import-txt').value='';
+  }catch(e){document.getElementById('import-msg').style.color='#FF4238';document.getElementById('import-msg').textContent='Feil: '+e.message;}
+}
+function resetImport(){BB_DATA=null;document.getElementById('import-msg').style.color='#2D0503';document.getElementById('import-msg').textContent='Nullstilt.';document.getElementById('nav-src').textContent='LSEG statisk';document.getElementById('nav-src').style.color='#FFF2F2';document.getElementById('nav-src').style.opacity='0.45';}
+
+// ── SETTINGS ──────────────────────────────────────────────────
+function buildTakTable(){
+  document.getElementById('tak-table').innerHTML='<tr><th>Par</th><th>Tak (øre)</th></tr>'+Object.entries(TAK).map(([p,v],i)=>`<tr style="cursor:pointer;background:${i%2===0?'transparent':'#fffafa'}" onclick="sClickRow('${p}',${v})"><td style="font-family:monospace;">${p}</td><td style="font-family:monospace;color:#FF4238;font-weight:500;">${v.toFixed(2)}</td></tr>`).join('');
+}
+function sOnPairChange(){const p=document.getElementById('s-pair').value;document.getElementById('s-val').value=(TAK[p]??0).toFixed(2);}
+function sClickRow(p,v){document.getElementById('s-pair').value=p;document.getElementById('s-val').value=v.toFixed(2);}
+function saveTak(){
+  const p=document.getElementById('s-pair').value;
+  const v=parseFloat(document.getElementById('s-val').value);
+  TAK[p]=v;
+  buildTakTable();
+  const btn=document.getElementById('s-save-btn');
+  btn.textContent='Lagret ✓';
+  setTimeout(()=>btn.textContent='Lagre',1800);
+}
+
+// ── Boot ──────────────────────────────────────────────────────
+initSelects();
+updateTicket();
+</script>
+</body>
+</html>
